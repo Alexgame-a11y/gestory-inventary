@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "Gestión de inventario",
+  "short_name": "Inventario",
+  "description": "Inventario y punto de venta con control FEFO.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#10132b",
+  "theme_color": "#10132b",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
