@@ -40,7 +40,7 @@ function normalizarProducto(p){
   return p;
 }
 
-if(!data) data={secciones:[{nombre:'General',color:'#ff4d4d',icono:'📦'}],clasificadores:["Sin clasificar"],almacenes:[{id:'alm_1',nombre:'Mostrador',pasillo:'A',estante:'1',color:'#22c55e'}],productos:[],ventas:[],fiados:[],proveedores:[],compras:[],logs:[],reservas:[],fotos:{},config:{nombreTienda:'INVENTARIO',logo:'',webhook:''},actual:"General",filtro:"todos",subFiltro:null,filtroAlm:null};
+if(!data) data={secciones:[{nombre:'General',color:'#ff4d4d',icono:'📦'}],clasificadores:["Sin clasificar"],almacenes:[{id:'alm_1',nombre:'Mostrador',pasillo:'A',estante:'1',color:'#22c55e'}],productos:[],ventas:[],fiados:[],proveedores:[],compras:[],logs:[],reservas:[],fotos:{},config:{nombreTienda:'INVENTARIO',logo:'',webhook:'',impuestoVenta:13},actual:"General",filtro:"todos",subFiltro:null,filtroAlm:null};
 if(!data.fotos) data.fotos={};
 data.productos=(Array.isArray(data.productos)?data.productos:[]).map(normalizarProducto).filter(Boolean);
 if(!Array.isArray(data.clasificadores)) data.clasificadores=["Sin clasificar"];
@@ -94,6 +94,7 @@ function aplicarDatosCargados(d){
   if($('nombreTiendaTxt')) $('nombreTiendaTxt').textContent=data.config.nombreTienda||'INVENTARIO';
   if($('operadorCaja')) $('operadorCaja').value=data.config.operador||'';
   if($('margenAlertaVencimiento')) $('margenAlertaVencimiento').value=String(data.config.margenAlertaVencimiento||15);
+  if($('impuestoVenta')) $('impuestoVenta').value=String([0,4,13].includes(Number(data.config.impuestoVenta))?Number(data.config.impuestoVenta):13);
   actualizarLogo();
   if(typeof aplicarTema==='function') aplicarTema(data.config.tema);
   rAlmChips(); rchips(); upd(); render();
@@ -227,6 +228,8 @@ function configurarCamposSeguros(){
   },{capture:true});
 }
 configurarCamposSeguros();
+function tasaImpuesto(){ const n=Number(data.config?.impuestoVenta); return [0,4,13].includes(n)?n:13; }
+$('impuestoVenta')?.addEventListener('change',e=>{ data.config.impuestoVenta=[0,4,13].includes(Number(e.target.value))?Number(e.target.value):13; saveFull(); updCaja(); });
 
 // Acciones rápidas, ticket de caja, estado de cuenta y ofertas express.
 function escaparTexto(valor){ return String(valor??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -243,22 +246,33 @@ function renderEstadoCuenta(fiadorId){
   const movimientos=[...compras.map(v=>({fecha:v.fecha,tipo:'Compra',monto:Math.max(0,(Number(v.cantidad)||0)-(Number(v.cantidadDevuelta)||0))*(Number(v.precio)||0),id:v.ventaId||v.id})),...(cliente.abonos||[]).map(a=>({fecha:a.fecha,tipo:'Abono recibido',monto:-Math.max(0,Number(a.monto)||0),id:a.id}))].sort((a,b)=>new Date(b.fecha||0)-new Date(a.fecha||0));
   panel.innerHTML=`<div class="debt-balance"><span>Saldo actual</span><strong>${Number(cliente.debe||0).toLocaleString('es-CR')} CRC</strong></div>${movimientos.length?movimientos.map(m=>`<div class="debt-statement-row ${m.monto<0?'payment':'charge'}"><span><b>${m.monto<0?'Abono recibido':'Compra'}${m.monto>=0&&m.id?` #${escaparTexto(m.id)}`:''}</b><small>${m.fecha?new Date(m.fecha).toLocaleString('es-CR'):'Fecha no disponible'}</small></span><strong>${m.monto<0?'−':'+'}${Math.abs(m.monto).toLocaleString('es-CR')} CRC</strong></div>`).join(''):'<p class="setting-help">No se encontraron compras asociadas a este cliente. Los abonos registrados se mostrarán aquí.</p>'}`;
 }
-function pintarTicket(items, metodo, cliente){
+function pintarTicket(items, metodo, cliente, iva=0){
   let ticket=$('ticketImpresion');
   if(!ticket){ ticket=document.createElement('section'); ticket.id='ticketImpresion'; ticket.className='ticket-impresion'; document.body.appendChild(ticket); }
-  const total=items.reduce((s,x)=>s+(Number(x.cantidad)||0)*(Number(x.precio)||0),0);
-  ticket.innerHTML=`<header><h1>${escaparTexto(data.config?.nombreTienda||'INVENTARIO')}</h1><p>Ticket de venta · ${new Date().toLocaleString('es-CR')}</p></header><div class="ticket-lineas">${items.map(x=>`<div class="ticket-fila"><span>${escaparTexto(x.nombre)}<small>${Number(x.cantidad)||0} × ${Number(x.precio||0).toLocaleString('es-CR')} CRC</small></span><b>${((Number(x.cantidad)||0)*(Number(x.precio)||0)).toLocaleString('es-CR')}</b></div>`).join('')}</div><div class="ticket-total"><span>TOTAL</span><strong>${total.toLocaleString('es-CR')} CRC</strong></div><p class="ticket-pago">Pago: ${escaparTexto(metodo==='otro'?'Fiado':metodo||'Efectivo')}${cliente?` · Cliente: ${escaparTexto(cliente)}`:''}</p><footer>¡Gracias por su compra!</footer>`;
+  const subtotal=items.reduce((s,x)=>s+(Number(x.cantidad)||0)*(Number(x.precio)||0),0), impuesto=Math.round(subtotal*iva/100), total=subtotal+impuesto;
+  ticket.innerHTML=`<header><h1>${escaparTexto(data.config?.nombreTienda||'INVENTARIO')}</h1><p>Ticket de venta · ${new Date().toLocaleString('es-CR')}</p></header><div class="ticket-lineas">${items.map(x=>`<div class="ticket-fila"><span>${escaparTexto(x.nombre)}<small>${Number(x.cantidad)||0} × ${Number(x.precio||0).toLocaleString('es-CR')} CRC</small></span><b>${((Number(x.cantidad)||0)*(Number(x.precio)||0)).toLocaleString('es-CR')}</b></div>`).join('')}</div><div class="ticket-total"><span>Subtotal</span><strong>${subtotal.toLocaleString('es-CR')} CRC</strong></div><div class="ticket-total"><span>IVA (${iva}%)</span><strong>${impuesto.toLocaleString('es-CR')} CRC</strong></div><div class="ticket-total"><span>TOTAL</span><strong>${total.toLocaleString('es-CR')} CRC</strong></div><p class="ticket-pago">Pago: ${escaparTexto(metodo==='otro'?'Fiado':metodo||'Efectivo')}${cliente?` · Cliente: ${escaparTexto(cliente)}`:''}</p><footer>¡Gracias por su compra!</footer>`;
 }
 let ticketPendiente=null;
 document.addEventListener('click',event=>{
   const cobrar=event.target.closest('#btnCobrar');
-  if(cobrar&&!cobrar.disabled) ticketPendiente={items:caja.map(x=>({...x})),metodo:$('metodoPago')?.value||'efectivo',cliente:$('fiadoSelect')?.selectedOptions?.[0]?.textContent||'',ventasAntes:data.ventas.length};
+  if(cobrar&&!cobrar.disabled) ticketPendiente={items:caja.map(x=>({...x})),metodo:$('metodoPago')?.value||'efectivo',cliente:$('fiadoSelect')?.selectedOptions?.[0]?.textContent||'',fiadoId:$('fiadoSelect')?.value||'',ventasAntes:data.ventas.length,iva:tasaImpuesto()};
 },true);
 document.addEventListener('click',event=>{
   if(event.target.closest('#btnCobrar')&&ticketPendiente){
     const recibo=ticketPendiente; ticketPendiente=null;
     if(data.ventas.length<=recibo.ventasAntes) return;
-    pintarTicket(recibo.items,recibo.metodo,recibo.metodo==='otro'?recibo.cliente:'');
+    const nuevas=data.ventas.slice(recibo.ventasAntes); let impuestoTotal=0;
+    nuevas.forEach(v=>{
+      const id=String(v.productoId||v.idProducto||''), item=recibo.items.find(x=>String(x.id)===id);
+      const cantidad=Math.max(0,Number(v.cantidad)||0), base=Number(v.precio)||Number(item?.precio)||0;
+      if(!item||!cantidad||!recibo.iva) return;
+      const subtotal=cantidad*base, impuesto=Math.round(subtotal*recibo.iva/100);
+      v.subtotalSinImpuesto=subtotal; v.impuestoVenta=impuesto; v.totalConImpuesto=subtotal+impuesto; v.ivaPorcentaje=recibo.iva; v.precio=(subtotal+impuesto)/cantidad;
+      impuestoTotal+=impuesto;
+    });
+    if(recibo.metodo==='otro'&&recibo.fiadoId&&impuestoTotal){ const cliente=data.fiados.find(f=>String(f.id)===String(recibo.fiadoId)); if(cliente) cliente.debe=(Number(cliente.debe)||0)+impuestoTotal; }
+    saveFull();
+    pintarTicket(recibo.items,recibo.metodo,recibo.metodo==='otro'?recibo.cliente:'',recibo.iva);
     document.body.classList.add('imprimiendo-ticket'); requestAnimationFrame(()=>window.print());
   }
   if(event.target.closest('#btnPantallaCompleta')){
@@ -289,6 +303,35 @@ document.addEventListener('click',event=>{
 });
 document.addEventListener('change',event=>{ if(event.target.matches('#fiadoAbonoSelect')) renderEstadoCuenta(event.target.value); });
 window.addEventListener('afterprint',()=>document.body.classList.remove('imprimiendo-ticket'));
+let mostrandoLotesAgotados=false;
+function renderLotesAgotados(){
+  const destino=$('listaLogs'); if(!destino) return;
+  const registros=[];
+  data.productos.forEach(p=>{
+    const grupos=new Map();
+    (p.historial||[]).forEach(h=>{
+      (Array.isArray(h.usados)?h.usados:[]).forEach(u=>{
+        const loteId=String(u.loteId||''); if(!loteId||p.lotes.some(l=>String(l.id)===loteId)) return;
+        const g=grupos.get(loteId)||{loteId,vendidos:0,merma:0,fecha:h.fecha||u.fecha||''};
+        if(h.tipo==='merma') g.merma+=Number(u.cantidad)||0; else g.vendidos+=Number(u.cantidad)||0;
+        if(!g.fecha||new Date(h.fecha||u.fecha||0)<new Date(g.fecha)) g.fecha=h.fecha||u.fecha||g.fecha;
+        grupos.set(loteId,g);
+      });
+    });
+    grupos.forEach(g=>{
+      const compra=data.compras.find(c=>c.estado!=='anulada'&&c.items?.some(i=>String(i.loteId)===g.loteId));
+      const itemCompra=compra?.items?.find(i=>String(i.loteId)===g.loteId);
+      registros.push({producto:p.nombre,...g,recibido:itemCompra?.cantidad||g.vendidos+g.merma,fechaEntrada:compra?.fecha||g.fecha});
+    });
+  });
+  registros.sort((a,b)=>new Date(b.fechaEntrada||0)-new Date(a.fechaEntrada||0));
+  destino.innerHTML=registros.length?`<div class="report-table-wrap"><table class="report-table"><thead><tr><th>Producto</th><th>Lote</th><th>Fecha de entrada</th><th>Recibido</th><th>Vendido</th><th>Merma</th></tr></thead><tbody>${registros.map(r=>`<tr><td>${esc(r.producto)}</td><td>${esc(r.loteId)}</td><td>${esc(r.fechaEntrada?new Date(r.fechaEntrada).toLocaleDateString('es-CR'):'—')}</td><td>${r.recibido}</td><td>${r.vendidos}</td><td>${r.merma}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-state">No hay lotes agotados registrados en el historial FEFO.</div>';
+}
+$('btnLotesAgotados')?.addEventListener('click',()=>{
+  mostrandoLotesAgotados=!mostrandoLotesAgotados;
+  $('btnLotesAgotados').textContent=mostrandoLotesAgotados?'Ver todos los logs':'Lotes agotados';
+  if(mostrandoLotesAgotados) renderLotesAgotados(); else renderLogs();
+});
 
 function calcFEFO(p,cant){
   if(cant<=0) return {ok:false,costo:0,usados:[],rest:cant};
@@ -391,6 +434,10 @@ function limpiarReservasVencidas(){ const ahora=Date.now(); const activas=data.r
 setInterval(()=>{ limpiarReservasVencidas(); updCaja(); upd(); },60000);
 
 let caja=[], vId=null, cantId=null, fTmp=null, fTmpId=null, fotoBorrada=false, confCb=null, lastId=null, filtroRapido='todos', loteBorrarId=null;
+window.addEventListener('beforeunload',event=>{
+  const reservasActivas=Array.isArray(data.reservas)&&data.reservas.some(r=>Number(r.expira)>Date.now());
+  if(caja.length||reservasActivas){ event.preventDefault(); event.returnValue=''; }
+});
 let inventoryPage=1;
 const INVENTORY_PAGE_SIZE=60;
 let reportPage=1;
@@ -427,6 +474,16 @@ function renderAlertas(){
   const vencidos=data.productos.filter(p=>(calcDias(getProxVence(p))??1)<0).length;
   const lotesProximos=data.productos.reduce((total,p)=>total+p.lotes.filter(l=>l.restante>0&&(()=>{const d=calcDias(l.vencimiento);return d!==null&&d>=0&&d<=margenAlertaVencimiento();})()).length,0);
   const reservas=data.reservas.length;
+  const urgentes=data.productos.flatMap(p=>p.lotes.filter(l=>Number(l.restante)>0).map(l=>({producto:p.nombre,dias:calcDias(l.vencimiento)}))).filter(l=>l.dias!==null&&l.dias>=0&&l.dias<7);
+  const banner=$('expiryEmergency');
+  if(banner){
+    if(urgentes.length){
+      const nombres=[...new Set(urgentes.map(x=>x.producto))];
+      banner.classList.remove('hidden');
+      banner.innerHTML=`<span aria-hidden="true">⚠️</span><span><b>Atención FEFO:</b> ${urgentes.length} ${urgentes.length===1?'lote vence':'lotes vencen'} en menos de 7 días${nombres.length?` · ${nombres.slice(0,3).map(esc).join(', ')}${nombres.length>3?'…':''}`:''}.</span><button type="button" data-expiry-emergency>Revisar y aplicar rebaja</button>`;
+      banner.querySelector('[data-expiry-emergency]').onclick=()=>{ filtroRapido='vence'; document.querySelectorAll('.quick-filter').forEach(f=>f.classList.toggle('active',f.dataset.quick==='vence')); cambiarVistaPrincipal('inventory'); render(); };
+    }else{ banner.classList.add('hidden'); banner.textContent=''; }
+  }
   panel.innerHTML=`<button class="alert-card ${bajos?'warn':''}" type="button" data-alert-filter="bajo"><b>${bajos}</b><span>Productos para reponer</span></button><div class="alert-card ${lotesBajoMinimo?'warn':''}" role="status"><b>${lotesBajoMinimo}</b><span>Lotes en productos bajo el mínimo</span></div><button class="alert-card ${vencen?'warn':''}" type="button" data-alert-filter="vence"><b>${vencen}</b><span>Productos que vencen en ${margenAlertaVencimiento()} días</span></button><button class="alert-card ${vencidos?'danger':''}" type="button" data-alert-filter="vencido"><b>${vencidos}</b><span>Productos vencidos</span></button><div class="alert-card ${lotesProximos?'warn':''}"><b>${lotesProximos}</b><span>Lotes que vencen en ${margenAlertaVencimiento()} días</span></div><div class="alert-card ${reservas?'warn':''}"><b>${reservas}</b><span>Reservas activas</span></div>`;
   panel.querySelectorAll('[data-alert-filter]').forEach(b=>b.onclick=()=>{ filtroRapido=b.dataset.alertFilter; document.querySelectorAll('.quick-filter').forEach(f=>f.classList.toggle('active',f.dataset.quick===filtroRapido)); cambiarVistaPrincipal('inventory'); render(); });
 }
@@ -563,8 +620,12 @@ function updCaja(){
   const t=$('cajaTicket'), b=$('btnCobrar');
   let tot=0, ga=0;
   caja.forEach(it=>{ tot+=it.cantidad*it.precio; ga+=it.gan; });
+  const subtotal=Math.round(tot), iva=tasaImpuesto(), impuesto=Math.round(subtotal*iva/100), total=subtotal+impuesto;
   if($('cajaItemCount')) $('cajaItemCount').textContent=`${caja.reduce((s,it)=>s+it.cantidad,0)} unidades · ${caja.length} ${caja.length===1?'línea':'líneas'}`;
-  if($('cajaTotal')) $('cajaTotal').textContent=tot.toLocaleString('es-CR')+' CRC';
+  if($('cajaSubtotal')) $('cajaSubtotal').textContent=subtotal.toLocaleString('es-CR')+' CRC';
+  if($('cajaIvaLabel')) $('cajaIvaLabel').textContent=`IVA (${iva}%)`;
+  if($('cajaImpuesto')) $('cajaImpuesto').textContent=impuesto.toLocaleString('es-CR')+' CRC';
+  if($('cajaTotal')) $('cajaTotal').textContent=total.toLocaleString('es-CR')+' CRC';
   if($('cajaGanancia')) $('cajaGanancia').textContent=`Ganancia estimada: ${ga.toLocaleString('es-CR')} CRC`;
   if(!caja.length){
     if(t) t.innerHTML='<div class="caja-empty"><span aria-hidden="true">▤</span><b>El ticket está vacío</b><small>Busca un producto para empezar la venta.</small></div>';
@@ -576,7 +637,7 @@ function updCaja(){
     const disp=producto?getDisponible(producto):0;
     return `<article class="caja-line"><div class="caja-line-main"><b>${esc(it.nombre)}</b><span>${it.cantidad} × ${it.precio.toLocaleString('es-CR')} CRC</span><small>FEFO ${esc(it.vence||'Sin vencimiento')} · quedan ${disp} disponibles</small></div><strong>${(it.cantidad*it.precio).toLocaleString('es-CR')} CRC</strong><button class="caja-del" type="button" data-reserva="${esc(it.reservaId)}" data-uid="${esc(it.uid)}" aria-label="Quitar ${esc(it.nombre)} del ticket">×</button></article>`;
   }).join('');
-  if(b){ b.textContent=`Cobrar ${tot.toLocaleString('es-CR')} CRC`; b.disabled=false; }
+  if(b){ b.textContent=`Cobrar ${total.toLocaleString('es-CR')} CRC`; b.disabled=false; }
   t?.querySelectorAll('.caja-del').forEach(x=>x.onclick=()=>{ const rid=x.dataset.reserva, uid=x.dataset.uid; data.reservas=data.reservas.filter(r=>r.id!==rid); caja=caja.filter(c=>c.uid!==uid); updCaja(); saveFull(); });
   updReservasBadge();
 }
