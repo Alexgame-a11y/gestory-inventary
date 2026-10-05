@@ -1,9 +1,10 @@
-const CACHE_NAME = 'inventario-app-v7';
+const CACHE_NAME = 'inventario-app-v8';
 const APP_FILES = [
   './',
   './index.html',
   './styles.css',
   './script.js',
+  './enhancements.js',
   './manifest.json',
   './pwa.js',
   './icon.svg'

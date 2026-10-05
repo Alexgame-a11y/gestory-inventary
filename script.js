@@ -342,7 +342,12 @@ function calcFEFO(p,cant){
 }
 function descFEFO(p,cant){ const c=calcFEFO(p,cant); if(!c.ok) return null; c.usados.forEach(u=>{ const lo=p.lotes.find(l=>l.id===u.loteId); if(lo) lo.restante-=u.cantidad; }); p.lotes=p.lotes.filter(l=>l.restante>0); p.cantidad=p.lotes.reduce((a,l)=>a+(l.restante||0),0); return c; }
 function getProxVence(p){ let fecha=null,menor=Infinity; for(const l of p.lotes){ if((Number(l.restante)||0)<=0||!l.vencimiento) continue; const ts=Date.parse(l.vencimiento); if(!Number.isNaN(ts)&&ts<menor){menor=ts;fecha=l.vencimiento;} } return fecha; }
-function margenAlertaVencimiento(){ const n=Number(data.config?.margenAlertaVencimiento); return [7,15,30,60].includes(n)?n:15; }
+function margenAlertaVencimiento(producto=null){
+  const porSeccion=data.config?.alertaVencimientoSeccion;
+  const personalizado=producto&&porSeccion?Number(porSeccion[producto.seccion]):NaN;
+  if([3,7,15,30,60].includes(personalizado)) return personalizado;
+  const n=Number(data.config?.margenAlertaVencimiento); return [7,15,30,60].includes(n)?n:15;
+}
 function compraDeLote(loteId){ return data.compras.find(c=>c.estado!=='anulada'&&c.items?.some(i=>i.loteId===String(loteId))); }
 let reservationTotals=new Map();
 function rebuildReservationTotals(){ reservationTotals=new Map(); for(const r of data.reservas){const id=String(r.productoId);reservationTotals.set(id,(reservationTotals.get(id)||0)+(Number(r.cantidad)||0));} }
@@ -392,9 +397,10 @@ function saveFull(){
         try{ localStorage.setItem('inventarioPro_v40',snapshot); copiaLocal=true; }catch{}
       }
       if(revision===saveRevision){ const b=$('backupStatus'); if(b){ b.textContent=copiaLocal?'Guardado + copia local':'Guardado en IndexedDB · exporta un backup'; setTimeout(()=>{if(b.textContent.startsWith('Guardado'))b.textContent='Auto-save';},3500); } }
-    }).catch(()=>{
+    }).catch(error=>{
+      if(error?.name==='QuotaExceededError'||/quota|storage full/i.test(String(error?.message||''))) window.mostrarRespaldoEmergencia?.();
       try{ localStorage.setItem('inventarioPro_v40',snapshot); const b=$('backupStatus'); if(b) b.textContent='Guardado en copia local'; }
-      catch{ const b=$('backupStatus'); if(b) b.textContent='Error al guardar'; toast('No se pudo guardar. Exporta un backup para proteger tus datos.'); }
+      catch{ const b=$('backupStatus'); if(b) b.textContent='Error al guardar'; toast('No se pudo guardar. Exporta un backup para proteger tus datos.'); window.mostrarRespaldoEmergencia?.(); }
     });
   },250);
 }
@@ -402,6 +408,7 @@ function deshacerUltimoCambio(){
   const anterior=undoSnapshots.pop();
   if(!anterior) return toast('No hay cambios recientes para deshacer');
   const accionRevertida=data.logs?.at(-1), descripcion=accionRevertida?`${accionRevertida.accion} · ${accionRevertida.producto||'datos'}`:'último cambio local';
+  if(!confirm(`¿Deshacer ${descripcion}? Se restaurará el estado anterior de los datos.`)){ undoSnapshots.push(anterior); return; }
   try{ data=JSON.parse(anterior); aplicarDatosCargados(data); lastSavedState=JSON.stringify(data); saveFull(); toast(`Se deshizo: ${descripcion}`); }
   catch{ toast('No se pudo deshacer; los datos actuales se mantienen'); }
 }
@@ -449,7 +456,7 @@ function upd(){
   const vHoy=data.ventas.filter(v=>fechaVentaCR(v.fecha)===hoy);
   if($('sTotal')) $('sTotal').textContent=data.productos.length;
   if($('sBajo')) $('sBajo').textContent=data.productos.filter(p=>getDisponible(p)<=p.stockMin).length;
-  if($('sVence')) $('sVence').textContent=data.productos.filter(p=>{const d=calcDias(getProxVence(p)); return d!==null&&d>=0&&d<=margenAlertaVencimiento();}).length;
+  if($('sVence')) $('sVence').textContent=data.productos.filter(p=>{const d=calcDias(getProxVence(p)); return d!==null&&d>=0&&d<=margenAlertaVencimiento(p);}).length;
   if($('sPerdida')) $('sPerdida').textContent=`riesgo ${margenAlertaVencimiento()} días`;
   if($('sVentasHoy')) $('sVentasHoy').textContent=vHoy.reduce((a,v)=>a+Math.max(0,(Number(v.cantidad)||0)-(Number(v.cantidadDevuelta)||0))*(Number(v.precio)||0),0).toLocaleString();
   if($('sVentasCount')) $('sVentasCount').textContent=vHoy.filter(v=>(Number(v.cantidad)||0)>(Number(v.cantidadDevuelta)||0)).length+' ventas';
@@ -470,9 +477,9 @@ function renderAlertas(){
   const productosBajoMinimo=data.productos.filter(p=>getDisponible(p)<=p.stockMin);
   const bajos=productosBajoMinimo.length;
   const lotesBajoMinimo=productosBajoMinimo.reduce((total,p)=>total+p.lotes.filter(l=>Number(l.restante)>0).length,0);
-  const vencen=data.productos.filter(p=>{const d=calcDias(getProxVence(p)); return d!==null&&d>=0&&d<=margenAlertaVencimiento();}).length;
+  const vencen=data.productos.filter(p=>{const d=calcDias(getProxVence(p)); return d!==null&&d>=0&&d<=margenAlertaVencimiento(p);}).length;
   const vencidos=data.productos.filter(p=>(calcDias(getProxVence(p))??1)<0).length;
-  const lotesProximos=data.productos.reduce((total,p)=>total+p.lotes.filter(l=>l.restante>0&&(()=>{const d=calcDias(l.vencimiento);return d!==null&&d>=0&&d<=margenAlertaVencimiento();})()).length,0);
+  const lotesProximos=data.productos.reduce((total,p)=>total+p.lotes.filter(l=>l.restante>0&&(()=>{const d=calcDias(l.vencimiento);return d!==null&&d>=0&&d<=margenAlertaVencimiento(p);})()).length,0);
   const reservas=data.reservas.length;
   const urgentes=data.productos.flatMap(p=>p.lotes.filter(l=>Number(l.restante)>0).map(l=>({producto:p.nombre,dias:calcDias(l.vencimiento)}))).filter(l=>l.dias!==null&&l.dias>=0&&l.dias<7);
   const banner=$('expiryEmergency');
@@ -523,7 +530,7 @@ function render(){
   let lista=vistas.filter(v=>{
     const p=v.p;
     return (!data.actual||p.seccion===data.actual)&&(!data.subFiltro||p.clasificador===data.subFiltro)&&(!data.filtroAlm||p.almacenId===data.filtroAlm)&&
-      (filtroRapido!=='bajo'||v.disp<=p.stockMin)&&(filtroRapido!=='vence'||(v.dias!==null&&v.dias>=0&&v.dias<=margenAlertaVencimiento()))&&
+      (filtroRapido!=='bajo'||v.disp<=p.stockMin)&&(filtroRapido!=='vence'||(v.dias!==null&&v.dias>=0&&v.dias<=margenAlertaVencimiento(p)))&&
       (filtroRapido!=='vencido'||(v.dias!==null&&v.dias<0))&&(filtroRapido!=='reservado'||v.reservado>0)&&(!q||coincideBusqueda(`${p.nombre} ${p.codigo} ${p.descripcion||''} ${p.seccion} ${p.clasificador}`,q));
   });
   const ord=$('orden')?.value||'reciente';
@@ -560,7 +567,7 @@ function render(){
     const stockClass=disp<=0?'empty':disp<=p.stockMin?'low':'ok';
     const almacen=data.almacenes.find(a=>a.id===p.almacenId);
     const venceBadge=dias!==null&&dias<0?`<span class="c-vencido">Vencido · ${esc(prox)}</span>`:dias!==null&&dias<=margenAlertaVencimiento()?`<span class="c-pronto">${dias===0?'Vence hoy':`Vence en ${dias} d`} · ${esc(prox||'')}</span>`:'';
-    d.innerHTML=`<div class="item-foto-wrap"><div class="badge-corner">${venceBadge}${reservado>0?`<span class="c-reserva">${reservado} reservados</span>`:''}</div>${p.fotoId&&data.fotos[p.fotoId]?`<img class="item-foto" src="${esc(data.fotos[p.fotoId])}" alt="${esc(p.nombre)}" loading="lazy">`:`<div class="item-avatar" aria-hidden="true">${esc(p.nombre.slice(0,2).toUpperCase())}</div>`}<div class="stock-bar" aria-hidden="true"><i class="${disp<=0?'empty':disp<=p.stockMin?'low':''}" style="width:${p.cantidad>0?Math.min(100,Math.max(0,(disp/p.cantidad)*100)):0}%"></i></div></div><div class="item-body"><div class="item-top"><span class="item-section">${esc(p.seccion)}${p.clasificador&&p.clasificador!=='Sin clasificar'?` · ${esc(p.clasificador)}`:''}</span><span class="stock-pill ${stockClass}">${stockLabel}</span></div><h3 class="item-name">${esc(p.nombre)}</h3><div class="price-row"><div><small class="price-label">Precio de venta</small><span class="price-big">${p.precioVenta.toLocaleString('es-CR')} <small>CRC</small></span></div><span class="price-cost">Costo FEFO<br><b>${Math.round(costo).toLocaleString('es-CR')} CRC</b></span></div><div class="item-stock-summary"><div class="item-available"><b>${disp} <small>${esc(p.unidad)}</small></b><span>Disponibles</span></div><div class="item-stock-total"><span>Inventario total</span><b>${p.cantidad} ${esc(p.unidad)}</b></div></div><div class="item-code"><span>Código</span><b>${esc(p.codigo)}</b>${almacen?`<span class="item-warehouse">${esc(almacen.nombre)}</span>`:''}</div><div class="card-btns"><button class="c-btn primary btn-v" type="button" ${disp<=0?'disabled':''} aria-label="Vender ${esc(p.nombre)}" title="${disp<=0?'Sin unidades disponibles':'Registrar una venta'}">Vender</button><button class="c-btn ghost btn-e" type="button" aria-label="Editar ${esc(p.nombre)}">Editar</button><button class="c-btn ghost btn-m" type="button" ${disp<=0?'disabled':''} aria-label="Registrar merma de ${esc(p.nombre)}" title="${disp<=0?'Sin unidades disponibles':'Registrar merma'}">Merma</button>${filtroRapido==='vence'&&dias!==null&&dias>=0&&dias<=margenAlertaVencimiento()?`<button class="c-btn ghost btn-quick-discount" data-quick-discount="${esc(p.id)}" type="button" aria-label="Aplicar descuento a ${esc(p.nombre)}">Aplicar descuento</button>`:''}<button class="c-btn ghost btn-history" type="button" aria-label="Ver historial de ${esc(p.nombre)}">Historial</button><button class="c-btn danger btn-x" title="Eliminar producto" aria-label="Eliminar ${esc(p.nombre)}" type="button">Eliminar</button></div></div>`;
+    d.innerHTML=`<div class="item-foto-wrap"><div class="badge-corner">${venceBadge}${reservado>0?`<span class="c-reserva">${reservado} reservados</span>`:''}</div>${p.fotoId&&data.fotos[p.fotoId]?`<img class="item-foto" src="${esc(data.fotos[p.fotoId])}" alt="${esc(p.nombre)}" loading="lazy">`:`<div class="item-avatar" aria-hidden="true">${esc(p.nombre.slice(0,2).toUpperCase())}</div>`}<div class="stock-bar" aria-hidden="true"><i class="${disp<=0?'empty':disp<=p.stockMin?'low':''}" style="width:${p.cantidad>0?Math.min(100,Math.max(0,(disp/p.cantidad)*100)):0}%"></i></div></div><div class="item-body"><div class="item-top"><span class="item-section">${esc(p.seccion)}${p.clasificador&&p.clasificador!=='Sin clasificar'?` · ${esc(p.clasificador)}`:''}</span><span class="stock-pill ${stockClass}">${stockLabel}</span></div><h3 class="item-name">${esc(p.nombre)}</h3><div class="price-row"><div><small class="price-label">Precio de venta</small><span class="price-big">${p.precioVenta.toLocaleString('es-CR')} <small>CRC</small></span></div><span class="price-cost">Costo FEFO<br><b>${Math.round(costo).toLocaleString('es-CR')} CRC</b></span></div><div class="item-stock-summary"><div class="item-available"><b>${disp} <small>${esc(p.unidad)}</small></b><span>Disponibles</span></div><div class="item-stock-total"><span>Inventario total</span><b>${p.cantidad} ${esc(p.unidad)}</b></div></div><div class="item-code"><span>Código</span><b>${esc(p.codigo)}</b>${almacen?`<span class="item-warehouse">${esc(almacen.nombre)}</span>`:''}</div><div class="card-btns"><button class="c-btn primary btn-v" type="button" ${disp<=0?'disabled':''} aria-label="Vender ${esc(p.nombre)}" title="${disp<=0?'Sin unidades disponibles':'Registrar una venta'}">Vender</button><button class="c-btn ghost btn-e" type="button" aria-label="Editar ${esc(p.nombre)}">Editar</button><button class="c-btn ghost btn-m" type="button" ${disp<=0?'disabled':''} aria-label="Registrar merma de ${esc(p.nombre)}" title="${disp<=0?'Sin unidades disponibles':'Registrar merma'}">Merma</button>${filtroRapido==='vence'&&dias!==null&&dias>=0&&dias<=margenAlertaVencimiento(p)?`<button class="c-btn ghost btn-quick-discount" data-quick-discount="${esc(p.id)}" type="button" aria-label="Aplicar descuento a ${esc(p.nombre)}">Aplicar descuento</button>`:''}<button class="c-btn ghost btn-history" type="button" aria-label="Ver historial de ${esc(p.nombre)}">Historial</button><button class="c-btn danger btn-x" title="Eliminar producto" aria-label="Eliminar ${esc(p.nombre)}" type="button">Eliminar</button></div></div>`;
     d.querySelector('.btn-v').onclick=()=>abrirV(p.id);
     d.querySelector('.btn-e').onclick=()=>editar(p.id);
     d.querySelector('.btn-x').onclick=()=>abrirBorrar(p.id);
