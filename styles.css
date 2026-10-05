@@ -12,7 +12,7 @@
 .report-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.report-stat,.report-section{padding:12px;border:1px solid var(--border);border-radius:11px;background:var(--card2)}.report-columns,.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.report-table-wrap{overflow:auto}.report-table{width:100%;border-collapse:collapse;font-size:10px}.report-table td,.report-table th{padding:7px;border-bottom:1px solid var(--border);white-space:nowrap}.report-chart{display:flex;gap:6px;overflow:auto}.report-pagination,.inventory-pagination{display:flex;justify-content:space-between;align-items:center;padding:10px;font-size:10px}.backup-actions,.theme-presets,.color-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.color-control{display:grid;gap:6px;font-size:10px}.color-control input{height:36px}.inventory-pagination>div{display:flex;gap:8px;align-items:center}
 .logs-filters{display:grid;grid-template-columns:minmax(180px,2fr) minmax(160px,1fr) repeat(2,minmax(130px,.7fr));gap:8px;align-items:end}.logs-date{display:grid;gap:4px}.logs-date label{font-size:9px;color:var(--dim);font-weight:700;text-transform:uppercase}.logs-filters input,.logs-filters select{min-width:0}
 .lot-selector{display:grid;gap:8px;max-height:42vh;overflow:auto;margin:12px 0;scrollbar-width:thin}.lot-choice{display:flex;align-items:center;gap:10px;min-width:0;padding:10px 12px;border:1px solid var(--border);border-radius:11px;background:var(--card2);cursor:pointer}.lot-choice>input[type=checkbox],.lot-choice label>input[type=checkbox]{width:18px;height:18px;flex:0 0 18px;margin:0;accent-color:var(--primary)}.lot-choice>span,.lot-choice label>span{display:grid;gap:3px;min-width:0}.lot-choice b{font-size:11px;overflow-wrap:anywhere}.lot-choice small{font-size:9px;color:var(--dim);line-height:1.45}.lot-choice-merma{display:grid;grid-template-columns:minmax(0,1fr) 100px;cursor:default}.lot-choice-merma label{display:flex;align-items:center;gap:10px;min-width:0;cursor:pointer}.lot-choice-merma .merma-lote-cantidad{width:100%;padding:8px;font-size:12px}.lot-choice-merma .merma-lote-cantidad:disabled{opacity:.4}
-@media(max-width:1000px){body{height:auto;min-height:100dvh;overflow:auto}.layout{height:auto;overflow:visible;grid-template-columns:1fr}.grid{max-height:none;min-height:260px}.form-card,.list-card{height:auto}}
+@media(max-width:1100px){body{height:auto;min-height:100dvh;overflow-x:hidden;overflow-y:auto}.layout{height:auto;min-height:0;flex:none;overflow:visible;grid-template-columns:1fr;grid-template-rows:auto}.grid{height:auto;max-height:none;min-height:0;flex:none;overflow:visible}.form-card,.list-card{height:auto;min-height:0}.list-card{overflow:visible}}@media(min-width:1101px){.layout{grid-template-rows:minmax(0,1fr)}.list-card{min-width:0;min-height:0}.grid{min-width:0;min-height:0}}
 @media(max-width:760px){.section-nav{display:flex;overflow-x:auto}.section-nav-btn{flex:0 0 auto}.list-toolbar>.toolbar-right{grid-template-columns:minmax(0,1fr) 140px}.list-toolbar>.sections,.list-toolbar>.quick-filters{flex-wrap:nowrap;overflow-x:auto}.caja-workspace{grid-template-columns:1fr}.count-toolbar{grid-template-columns:1fr 1fr}.count-toolbar .search-box{grid-column:1/-1}.count-row{grid-template-columns:1fr 120px}.count-row>.btn{grid-column:1/-1}.settings-grid,.report-columns{grid-template-columns:1fr}}
 @media(max-width:600px){.header-inner{padding:10px}.kpi-strip{padding:0 10px 8px}.layout{padding:8px}.inventory-heading{align-items:flex-start;flex-direction:column;padding:14px}.inventory-heading .btn{width:100%}.grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:10px;gap:9px}.item{min-height:360px}.item-foto-wrap{height:105px;flex-basis:105px}.item-body{padding:9px;gap:7px}.item-name{font-size:13px}.price-big{font-size:17px}.drawer-box{padding:14px}.field-grid{grid-template-columns:1fr}.form-actions{flex-direction:column}.report-cards{grid-template-columns:repeat(2,1fr)}.purchase-line-fields{grid-template-columns:1fr 1fr}.purchase-line-fields .field:nth-child(3){grid-column:1/-1}.count-toolbar{grid-template-columns:1fr}.count-toolbar .search-box{grid-column:auto}.count-row{grid-template-columns:1fr 105px}.caja-workspace{grid-template-columns:1fr}.lot-choice-merma{grid-template-columns:minmax(0,1fr) 82px}.c-btn{min-height:44px;font-size:11px}.alert-card{min-height:58px}.backup-actions{grid-template-columns:1fr}.item-foto-wrap{height:clamp(92px,28vw,120px);flex-basis:clamp(92px,28vw,120px)}.item-foto{display:block;min-width:0;min-height:0;max-width:100%;max-height:100%;object-fit:contain;object-position:center}.photo-drop .foto-preview{display:block;max-width:100%;object-fit:contain;object-position:center}.item-avatar{width:52px;height:52px;font-size:21px}}
 @media(max-width:390px){.grid{grid-template-columns:1fr}.item{min-height:0}.list-toolbar>.toolbar-right{grid-template-columns:1fr}.count-row{grid-template-columns:1fr}.count-row>.btn{grid-column:auto}.supplier-card{flex-direction:column}.supplier-delete{width:100%}.item-foto-wrap{height:clamp(110px,42vw,150px);flex-basis:clamp(110px,42vw,150px)}}
@@ -498,6 +498,59 @@ body{
 .drawer-nav-actions .btn{min-height:36px;padding:7px 10px}
 @media print{.dashboard-panel,.tools-menu{display:none!important}}
 
+/* Accesos rápidos, estado de cuenta y ticket térmico de Caja. */
+#btnCobrar:disabled{background:#94a3b8!important;color:#fff!important;box-shadow:none!important;opacity:.58}
+#btnCobrar:not(:disabled){background:var(--success)!important;color:#fff!important;box-shadow:0 5px 16px color-mix(in srgb,var(--success) 24%,transparent)}
+.quick-actions{margin:8px 0 18px}.quick-actions h3{margin:0 0 9px;font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}.quick-actions-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.quick-action{min-height:96px;border-left:3px solid var(--primary)}
+.debt-statement{display:grid;gap:7px;max-height:280px;overflow:auto}.debt-balance{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px;border-radius:10px;background:color-mix(in srgb,var(--primary) 9%,var(--card));color:var(--text)}.debt-balance span{font-size:11px;color:var(--dim)}.debt-balance strong{font-size:16px}.debt-statement-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:9px;background:var(--card)}.debt-statement-row.payment{border-left-color:var(--success)}.debt-statement-row span{display:grid;gap:2px}.debt-statement-row b{font-size:10px}.debt-statement-row small{font-size:9px;color:var(--dim)}.debt-statement-row strong{font-size:10px;color:var(--danger);white-space:nowrap}.debt-statement-row.payment strong{color:var(--success)}
+.card-btns .btn-quick-discount{grid-column:1/-1;border-color:color-mix(in srgb,var(--warn) 45%,var(--border));color:var(--text)}
+.ticket-impresion{display:none}
+@media(max-width:760px){.quick-actions-grid{grid-template-columns:1fr}.quick-action{min-height:72px}}
+@media print{
+  @page{size:58mm auto;margin:2mm}
+  body.imprimiendo-ticket{display:block!important;width:54mm!important;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;overflow:visible!important;background:#fff!important;color:#111!important}
+  body.imprimiendo-ticket>*{display:none!important}
+  body.imprimiendo-ticket>#ticketImpresion{display:block!important;width:54mm!important;padding:2mm!important;background:#fff!important;color:#111!important;font:10px/1.35 Arial,sans-serif!important}
+  #ticketImpresion header{text-align:center;border-bottom:1px dashed #555;padding-bottom:6px;margin-bottom:6px}
+  #ticketImpresion h1{margin:0 0 4px;font-size:15px;overflow-wrap:anywhere}
+  #ticketImpresion p{margin:3px 0;font-size:9px}
+  #ticketImpresion .ticket-lineas{display:grid;gap:5px}
+  #ticketImpresion .ticket-fila{display:flex;justify-content:space-between;gap:5px;border-bottom:1px dotted #bbb;padding:3px 0;font-size:9px}
+  #ticketImpresion .ticket-fila span{display:grid;overflow-wrap:anywhere}
+  #ticketImpresion .ticket-fila small{font-size:8px}
+  #ticketImpresion .ticket-total{display:flex;justify-content:space-between;gap:4px;margin-top:8px;padding-top:6px;border-top:1px dashed #555;font-size:12px;font-weight:bold}
+  #ticketImpresion .ticket-pago{margin-top:6px}
+  #ticketImpresion footer{margin-top:13px;text-align:center;font-weight:bold}
+}
+
+/* Los temas dinámicos mantienen coherentes también los componentes decorativos. */
+body[data-tema="noche"],body[data-tema="azul"],body[data-tema="verde"]{background:var(--bg);color:var(--text)}
+body[data-tema="noche"] .kpi,body[data-tema="azul"] .kpi,body[data-tema="verde"] .kpi,
+body[data-tema="noche"] .dashboard-chart-card,body[data-tema="azul"] .dashboard-chart-card,body[data-tema="verde"] .dashboard-chart-card,
+body[data-tema="noche"] .dashboard-tool,body[data-tema="azul"] .dashboard-tool,body[data-tema="verde"] .dashboard-tool{background:var(--card);border-color:var(--border);color:var(--text);box-shadow:none}
+body[data-tema="noche"] .section-nav-btn.active,body[data-tema="azul"] .section-nav-btn.active,body[data-tema="verde"] .section-nav-btn.active{background:color-mix(in srgb,var(--primary) 15%,var(--card));border-color:color-mix(in srgb,var(--primary) 38%,var(--border));color:var(--text)}
+body[data-tema="noche"] .tools-item:hover,body[data-tema="azul"] .tools-item:hover,body[data-tema="verde"] .tools-item:hover{background:color-mix(in srgb,var(--primary) 12%,var(--card2));border-color:var(--border)}
+body[data-tema="noche"] .item,body[data-tema="azul"] .item,body[data-tema="verde"] .item,
+body[data-tema="noche"] .form-card,body[data-tema="azul"] .form-card,body[data-tema="verde"] .form-card,
+body[data-tema="noche"] .list-card,body[data-tema="azul"] .list-card,body[data-tema="verde"] .list-card{background:var(--card);border-color:var(--border);box-shadow:none}
+@media(prefers-reduced-motion:reduce){.quick-action,.debt-statement-row{transition:none}}
+
+
+/* Microanimaciones visibles, respetando la preferencia de movimiento reducido. */
+.drawer:not(.hidden),.modal:not(.hidden){animation:overlay-enter .34s ease-out both}
+.drawer:not(.hidden)>.drawer-box{animation:panel-enter .42s cubic-bezier(.16,1,.3,1) both}
+.modal:not(.hidden)>.modal-box{animation:modal-enter .38s cubic-bezier(.16,1,.3,1) both}
+.tools-menu[open] .tools-popover{transform-origin:top right;animation:menu-enter .3s cubic-bezier(.16,1,.3,1) both}
+.toast:not(.hidden){animation:toast-enter .34s cubic-bezier(.16,1,.3,1) both}
+@keyframes overlay-enter{from{opacity:0}to{opacity:1}}
+@keyframes panel-enter{from{opacity:.65;transform:translateY(28px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes modal-enter{from{opacity:.55;transform:translateY(22px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes menu-enter{from{opacity:0;transform:translateY(-12px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes toast-enter{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){
+  .drawer:not(.hidden),.modal:not(.hidden),.drawer:not(.hidden)>.drawer-box,.modal:not(.hidden)>.modal-box,.tools-menu[open] .tools-popover,.toast:not(.hidden){animation:none}
+}
+
 /* Menú de herramientas organizado por tareas, con accesos descriptivos. */
 .tools-menu{font-size:11px}
 .tools-menu summary{min-height:42px;padding:8px 13px;border-color:color-mix(in srgb,var(--primary) 28%,var(--border));background:color-mix(in srgb,var(--card2) 68%,transparent);color:var(--text);box-shadow:inset 0 1px #ffffff08;transition:border-color .18s,background .18s,box-shadow .18s}
@@ -625,3 +678,11 @@ body{background:var(--bg);color:var(--text)}
 .supplier-avatar{background:var(--card2)}
 @media(max-width:760px){.caja-workspace{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.alert-card.warn,.alert-card.danger{animation:none}}
+
+/* Estados de caja y formulario FEFO. */
+#btnCobrar:disabled{background:#cbd5e1!important;border-color:#cbd5e1!important;color:#64748b!important;box-shadow:none!important;opacity:1}
+#cierreCajaResumen{transition:filter .2s ease}
+#cierreCajaResumen.ciego-bloqueado{filter:blur(5px);user-select:none}
+.inventory-filter-empty{align-self:start;min-height:180px;padding:32px 20px;background:var(--card)}
+.inventory-filter-empty .empty-state-icon{display:block;margin-bottom:8px;font-size:24px}
+@media(prefers-reduced-motion:reduce){#cierreCajaResumen{transition:none}}
