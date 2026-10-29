@@ -40,7 +40,7 @@ function normalizarProducto(p){
   return p;
 }
 
-if(!data) data={secciones:[{nombre:'General',color:'#ff4d4d',icono:'📦'}],clasificadores:["Sin clasificar"],almacenes:[{id:'alm_1',nombre:'Mostrador',pasillo:'A',estante:'1',color:'#22c55e'}],productos:[],ventas:[],fiados:[],proveedores:[],compras:[],logs:[],reservas:[],fotos:{},config:{nombreTienda:'INVENTARIO',logo:'',webhook:'',impuestoVenta:13},actual:"General",filtro:"todos",subFiltro:null,filtroAlm:null};
+if(!data) data={secciones:[{nombre:'General',color:'#ff4d4d',icono:'📦'}],clasificadores:["Sin clasificar"],almacenes:[{id:'alm_1',nombre:'Mostrador',pasillo:'A',estante:'1',color:'#22c55e'}],productos:[],ventas:[],fiados:[],proveedores:[],compras:[],logs:[],reservas:[],fotos:{},config:{nombreTienda:'INVENTARIO',logo:'',webhook:'',impuestoVenta:13,tema:'brasa',versionEstilo:3},actual:"General",filtro:"todos",subFiltro:null,filtroAlm:null};
 if(!data.fotos) data.fotos={};
 data.productos=(Array.isArray(data.productos)?data.productos:[]).map(normalizarProducto).filter(Boolean);
 if(!Array.isArray(data.clasificadores)) data.clasificadores=["Sin clasificar"];
@@ -52,7 +52,7 @@ if(!Array.isArray(data.proveedores)) data.proveedores=[];
 if(!Array.isArray(data.compras)) data.compras=[];
 if(!Array.isArray(data.cierresCaja)) data.cierresCaja=[];
 if(!data.config) data.config={};
-if(!data.config.tema) data.config.tema='claro';
+if(!data.config.tema) data.config.tema='brasa';
 
 function actualizarLogo(){
   const src=typeof data.config?.logo==='string'?data.config.logo:'';
@@ -75,8 +75,8 @@ function aplicarDatosCargados(d){
   data.cierresCaja=data.cierresCaja.filter(c=>c&&typeof c==='object'&&typeof c.fecha==='string');
   data.fiados=data.fiados.filter(f=>f&&typeof f.nombre==='string').map(f=>({...f,debe:Math.max(0,numeroValido(f.debe)),abonos:Array.isArray(f.abonos)?f.abonos.filter(a=>a&&typeof a==='object').map(a=>({...a,monto:Math.max(0,numeroValido(a.monto)),fecha:String(a.fecha||'')})):[]}));
   if(!data.config||typeof data.config!=='object') data.config={};
-  const migrarEstilo=!Number(data.config.versionEstilo)||data.config.versionEstilo<2;
-  if(migrarEstilo){ data.config.tema='claro'; data.config.versionEstilo=2; }
+  const migrarEstilo=!Number(data.config.versionEstilo)||data.config.versionEstilo<3;
+  if(migrarEstilo){ data.config.tema='brasa'; data.config.versionEstilo=3; }
   if(!data.fotos||typeof data.fotos!=='object') data.fotos={};
   data.productos=data.productos.map(normalizarProducto).filter(Boolean);
   data.reservas=data.reservas.filter(r=>r&&typeof r==='object').map(r=>({...r,id:String(r.id??''),productoId:String(r.productoId??''),cantidad:Math.max(0,numeroValido(r.cantidad)),expira:Math.max(0,numeroValido(r.expira))})).filter(r=>r.id&&r.productoId&&r.cantidad>0&&r.expira>0);
@@ -84,7 +84,7 @@ function aplicarDatosCargados(d){
   data.proveedores=data.proveedores.filter(p=>p&&typeof p==='object'&&typeof p.nombre==='string').map(p=>({...p,id:String(p.id??'prov_'+Math.random().toString(36).slice(2,7))}));
   data.compras=data.compras.filter(c=>c&&typeof c==='object'&&Array.isArray(c.items)).map(c=>({...c,id:String(c.id??''),proveedor:String(c.proveedor??''),proveedorId:String(c.proveedorId??''),fecha:String(c.fecha??''),referencia:String(c.referencia??''),total:Math.max(0,numeroValido(c.total)),estado:c.estado==='anulada'?'anulada':'activa',items:c.items.filter(i=>i&&typeof i==='object').map(i=>({...i,productoId:String(i.productoId??''),nombre:String(i.nombre??'Producto'),unidad:String(i.unidad??'u'),cantidad:Math.max(0,numeroValido(i.cantidad)),costo:Math.max(0,numeroValido(i.costo)),vencimiento:String(i.vencimiento??''),loteId:String(i.loteId??'')}))})).filter(c=>c.id&&c.items.length);
   data.logs=data.logs.filter(l=>l&&typeof l==='object');
-  if(!data.config.tema) data.config.tema='claro';
+  if(!data.config.tema) data.config.tema='brasa';
   data.config.margenAlertaVencimiento=[7,15,30,60].includes(Number(data.config.margenAlertaVencimiento))?Number(data.config.margenAlertaVencimiento):15;
   data.actual=data.secciones.some(s=>s.nombre===data.actual)?data.actual:data.secciones[0].nombre;
   if(data.filtroAlm!==null&&data.filtroAlm!==undefined) data.filtroAlm=String(data.filtroAlm);
@@ -173,6 +173,7 @@ function calcDias(f){
   return Math.round((fechaUTC-Date.UTC(hy,hm-1,hd))/86400000);
 }
 const temas={
+  brasa:{bg:'#100d0d',card:'#191414',card2:'#241a18',border:'#402a27',border2:'#684138',primary:'#ffad32',primaryText:'#291505',success:'#8bc58c',warn:'#ffc04d',danger:'#ff6558',text:'#fff5e9',dim:'#c0aaa0',dim2:'#907b72',accentViolet:'#cf8ca1',accentPink:'#ff806c',accentBlue:'#e39d59',accentLime:'#e0c66a'},
   noche:{bg:'#10132b',card:'#181d3b',card2:'#22294d',border:'#343b68',border2:'#495184',primary:'#54e1d0',primaryText:'#10212b',success:'#65e6a8',warn:'#ffc857',danger:'#ff6b81',text:'#f3f4ff',dim:'#aab1d2',dim2:'#7b84aa',accentViolet:'#a78bfa',accentPink:'#ff70b8',accentBlue:'#63a7ff',accentLime:'#c6f36a'},
   azul:{bg:'#0a1a31',card:'#112746',card2:'#18365b',border:'#28517a',border2:'#3970a0',primary:'#47c8ff',primaryText:'#092037',success:'#55e6b0',warn:'#ffc857',danger:'#ff7187',text:'#f1f8ff',dim:'#a5bed8',dim2:'#7898b8',accentViolet:'#a78bfa',accentPink:'#ff70b8',accentBlue:'#63a7ff',accentLime:'#c6f36a'},
   verde:{bg:'#0d211f',card:'#14312e',card2:'#1c4540',border:'#2d6259',border2:'#428276',primary:'#b8f34b',primaryText:'#17270c',success:'#4ee0a0',warn:'#ffd166',danger:'#ff7187',text:'#f0fff8',dim:'#a5c9be',dim2:'#78a69a',accentViolet:'#a78bfa',accentPink:'#ff70b8',accentBlue:'#63a7ff',accentLime:'#c6f36a'},
@@ -183,6 +184,8 @@ function aplicarTema(nombre){
   data.config.tema=nombre;
   Object.entries(t).forEach(([k,v])=>document.documentElement.style.setProperty('--'+k.replace(/[A-Z]/g,m=>'-'+m.toLowerCase()),v));
   if(personalizado&&data.config.colores) Object.entries(data.config.colores).forEach(([k,v])=>{if(['bg','card','primary','success','warn','danger'].includes(k)&&/^#[0-9a-f]{6}$/i.test(v)) document.documentElement.style.setProperty('--'+k,v);});
+  const fondo=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim().slice(1);
+  if(/^[0-9a-f]{6}$/i.test(fondo)){const r=parseInt(fondo.slice(0,2),16)/255,g=parseInt(fondo.slice(2,4),16)/255,b=parseInt(fondo.slice(4,6),16)/255;const luminancia=.2126*r+.7152*g+.0722*b;document.documentElement.style.colorScheme=luminancia>.58?'light':'dark';}
   document.body.dataset.tema=nombre;
   document.querySelectorAll('.theme-preset').forEach(b=>b.classList.toggle('active',b.dataset.theme===nombre));
   ['Bg','Card','Primary','Success','Warn','Danger'].forEach(k=>{ const el=$('color'+k); if(el) el.value=getComputedStyle(document.documentElement).getPropertyValue('--'+k.toLowerCase()).trim(); });
@@ -192,7 +195,7 @@ function configurarColores(){
   document.querySelectorAll('.theme-preset').forEach(b=>b.onclick=()=>{ data.config.colores={}; aplicarTema(b.dataset.theme); saveFull(); });
   const mapa={Bg:'bg',Card:'card',Primary:'primary',Success:'success',Warn:'warn',Danger:'danger'};
   Object.entries(mapa).forEach(([id,varName])=>$('color'+id)?.addEventListener('input',e=>{ if(!data.config.colores)data.config.colores={}; data.config.colores[varName]=e.target.value; document.documentElement.style.setProperty('--'+varName,e.target.value); data.config.tema='personalizado'; document.body.dataset.tema='personalizado'; saveFull(); }));
-  $('btnRestaurarColores')?.addEventListener('click',()=>{ if(!confirm('¿Estás seguro de que deseas restablecer los colores de la interfaz?')) return; data.config.colores={}; aplicarTema('claro'); saveFull(); toast('Colores restaurados'); });
+  $('btnRestaurarColores')?.addEventListener('click',()=>{ if(!confirm('¿Estás seguro de que deseas restablecer los colores de la interfaz?')) return; data.config.colores={}; aplicarTema('brasa'); saveFull(); toast('Tema Brasa restaurado'); });
 }
 
 function agruparMiles(valor){ const digitos=String(valor??'').replace(/\D/g,''); return digitos.replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
@@ -336,7 +339,11 @@ $('btnLotesAgotados')?.addEventListener('click',()=>{
 function calcFEFO(p,cant){
   if(cant<=0) return {ok:false,costo:0,usados:[],rest:cant};
   let rest=cant, tot=0, usados=[];
-  const ord=[...p.lotes].filter(l=>l.restante>0).sort((a,b)=>new Date(a.vencimiento||'2099-12-31')-new Date(b.vencimiento||'2099-12-31'));
+  const fechaLote=lot=>lot.vencimiento?Date.parse(lot.vencimiento):Infinity;
+  const ord=[...p.lotes].filter(l=>l.restante>0).sort((a,b)=>{
+    const fechaA=fechaLote(a), fechaB=fechaLote(b);
+    return (Number.isFinite(fechaA)?fechaA:Infinity)-(Number.isFinite(fechaB)?fechaB:Infinity);
+  });
   for(const l of ord){ if(rest<=0) break; const u=Math.min(l.restante,rest); tot+=u*l.costo; usados.push({loteId:l.id,cantidad:u,costo:l.costo,vencimiento:l.vencimiento,fecha:l.fecha||''}); rest-=u; }
   return {ok:rest===0,costo:tot,usados,rest};
 }
@@ -379,14 +386,15 @@ let saveTimer=null, saveRevision=0, lastSavedState=null, undoSnapshots=[], persi
 const MAX_UNDO=5, MAX_UNDO_BYTES=6000000;
 function saveFull(){
   upd();
-  const currentState=JSON.stringify(data), previousState=lastSavedState;
-  if(previousState&&previousState!==currentState){
-    const bytes=new Blob([previousState]).size;
-    if(bytes<=MAX_UNDO_BYTES){ undoSnapshots.push(previousState); if(undoSnapshots.length>MAX_UNDO) undoSnapshots.shift(); }
-  }
-  lastSavedState=currentState;
-  const revision=++saveRevision, snapshot=currentState; clearTimeout(saveTimer);
+  const revision=++saveRevision;
+  clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{
+    const snapshot=JSON.stringify(data), previousState=lastSavedState;
+    if(previousState&&previousState!==snapshot){
+      const bytes=new Blob([previousState]).size;
+      if(bytes<=MAX_UNDO_BYTES){ undoSnapshots.push(previousState); if(undoSnapshots.length>MAX_UNDO) undoSnapshots.shift(); }
+    }
+    lastSavedState=snapshot;
     persistQueue=persistQueue.then(async()=>{
       if(revision<saveRevision) return;
       const db=await dbReady;
@@ -452,25 +460,43 @@ const REPORT_PAGE_SIZE=100;
 function updReservasBadge(){ limpiarReservasVencidas(); const b=$('reservaCount'); if(b){ if(data.reservas.length>0){ b.textContent=data.reservas.length; b.classList.remove('hidden'); } else b.classList.add('hidden'); } }
 function upd(){
   rebuildReservationTotals();
-  const hoy=hoyCR();
-  const vHoy=data.ventas.filter(v=>fechaVentaCR(v.fecha)===hoy);
+  const hoy=hoyCR(), inicioSemana=desplazarFecha(hoy,-6), ventasSemana=new Map();
+  let ventasHoyTotal=0, ventasHoyCount=0;
+  for(const venta of data.ventas){
+    const fecha=fechaVentaCR(venta.fecha);
+    const cantidad=Math.max(0,(Number(venta.cantidad)||0)-(Number(venta.cantidadDevuelta)||0));
+    const total=cantidad*(Number(venta.precio)||0);
+    if(fecha===hoy){ ventasHoyTotal+=total; if(cantidad>0) ventasHoyCount++; }
+    if(fecha>=inicioSemana&&fecha<=hoy) ventasSemana.set(fecha,(ventasSemana.get(fecha)||0)+total);
+  }
   if($('sTotal')) $('sTotal').textContent=data.productos.length;
   if($('sBajo')) $('sBajo').textContent=data.productos.filter(p=>getDisponible(p)<=p.stockMin).length;
   if($('sVence')) $('sVence').textContent=data.productos.filter(p=>{const d=calcDias(getProxVence(p)); return d!==null&&d>=0&&d<=margenAlertaVencimiento(p);}).length;
   if($('sPerdida')) $('sPerdida').textContent=`riesgo ${margenAlertaVencimiento()} días`;
-  if($('sVentasHoy')) $('sVentasHoy').textContent=vHoy.reduce((a,v)=>a+Math.max(0,(Number(v.cantidad)||0)-(Number(v.cantidadDevuelta)||0))*(Number(v.precio)||0),0).toLocaleString();
-  if($('sVentasCount')) $('sVentasCount').textContent=vHoy.filter(v=>(Number(v.cantidad)||0)>(Number(v.cantidadDevuelta)||0)).length+' ventas';
+  if($('sVentasHoy')) $('sVentasHoy').textContent=ventasHoyTotal.toLocaleString();
+  if($('sVentasCount')) $('sVentasCount').textContent=ventasHoyCount+' ventas';
   if($('sFiado')) $('sFiado').textContent=data.fiados.reduce((a,b)=>a+b.debe,0).toLocaleString();
   if($('sFiadoClientes')) $('sFiadoClientes').textContent=data.fiados.filter(f=>f.debe>0).length+' clientes';
   if($('sGanancia')) $('sGanancia').textContent=Math.round(data.productos.reduce((a,p)=>a+p.lotes.reduce((s,l)=>s+l.restante*l.costo,0),0)).toLocaleString();
-  updReservasBadge(); rFiados(); renderHistorialAbonos(); renderAlertas(); renderDashboardChart(); if($('fiadoAbonoSelect')?.value) renderEstadoCuenta($('fiadoAbonoSelect').value);
+  updReservasBadge(); rFiados(); renderHistorialAbonos(); renderAlertas(); renderDashboardChart(ventasSemana); if($('fiadoAbonoSelect')?.value) renderEstadoCuenta($('fiadoAbonoSelect').value);
 }
-function renderDashboardChart(){
+function renderDashboardChart(ventasSemana=null){
   const chart=$('dashboardSalesChart'); if(!chart) return;
-  const hoy=hoyCR();
-  const dias=Array.from({length:7},(_,i)=>desplazarFecha(hoy,i-6)).map(fecha=>({fecha,total:data.ventas.filter(v=>fechaVentaCR(v.fecha)===fecha).reduce((s,v)=>s+Math.max(0,(Number(v.cantidad)||0)-(Number(v.cantidadDevuelta)||0))*(Number(v.precio)||0),0)}));
+  const hoy=hoyCR(), fechas=Array.from({length:7},(_,i)=>desplazarFecha(hoy,i-6));
+  if(!(ventasSemana instanceof Map)){
+    ventasSemana=new Map();
+    for(const venta of data.ventas){
+      const fecha=fechaVentaCR(venta.fecha);
+      if(!fechas.includes(fecha)) continue;
+      const total=Math.max(0,(Number(venta.cantidad)||0)-(Number(venta.cantidadDevuelta)||0))*(Number(venta.precio)||0);
+      ventasSemana.set(fecha,(ventasSemana.get(fecha)||0)+total);
+    }
+  }
+  const dias=fechas.map(fecha=>({fecha,total:ventasSemana.get(fecha)||0}));
   const maximo=Math.max(1,...dias.map(d=>d.total));
-  chart.innerHTML=dias.map(d=>`<div class="dashboard-chart-day" title="${d.fecha}: ${d.total.toLocaleString('es-CR')} CRC"><strong>${d.total?d.total.toLocaleString('es-CR'):''}</strong><span class="dashboard-chart-track"><i style="height:${d.total?Math.max(5,d.total/maximo*100):0}%"></i></span><small>${d.fecha.slice(5)}</small></div>`).join('');
+  const totalSemana=dias.reduce((s,d)=>s+d.total,0);
+  chart.setAttribute('aria-label',`Ventas de los últimos 7 días: ${totalSemana.toLocaleString('es-CR')} CRC en total`);
+  chart.innerHTML=dias.map(d=>`<div class="dashboard-chart-day" title="${d.fecha}: ${d.total.toLocaleString('es-CR')} CRC"><strong>${d.total?d.total.toLocaleString('es-CR'):''}</strong><span class="dashboard-chart-track"><i style="height:${d.total?Math.max(5,d.total/maximo*100):0}%"></i></span><small>${d.fecha.slice(5)}</small></div>`).join('')+(!totalSemana?'<p class="dashboard-chart-empty">Aún no hay ventas en este período. Los totales aparecerán aquí cuando registres una venta.</p>':'');
 }
 function renderAlertas(){
   const panel=$('alertPanel'); if(!panel) return;
@@ -491,8 +517,9 @@ function renderAlertas(){
       banner.querySelector('[data-expiry-emergency]').onclick=()=>{ filtroRapido='vence'; document.querySelectorAll('.quick-filter').forEach(f=>f.classList.toggle('active',f.dataset.quick==='vence')); cambiarVistaPrincipal('inventory'); render(); };
     }else{ banner.classList.add('hidden'); banner.textContent=''; }
   }
-  panel.innerHTML=`<button class="alert-card ${bajos?'warn':''}" type="button" data-alert-filter="bajo"><b>${bajos}</b><span>Productos para reponer</span></button><div class="alert-card ${lotesBajoMinimo?'warn':''}" role="status"><b>${lotesBajoMinimo}</b><span>Lotes en productos bajo el mínimo</span></div><button class="alert-card ${vencen?'warn':''}" type="button" data-alert-filter="vence"><b>${vencen}</b><span>Productos que vencen en ${margenAlertaVencimiento()} días</span></button><button class="alert-card ${vencidos?'danger':''}" type="button" data-alert-filter="vencido"><b>${vencidos}</b><span>Productos vencidos</span></button><div class="alert-card ${lotesProximos?'warn':''}"><b>${lotesProximos}</b><span>Lotes que vencen en ${margenAlertaVencimiento()} días</span></div><div class="alert-card ${reservas?'warn':''}"><b>${reservas}</b><span>Reservas activas</span></div>`;
+  panel.innerHTML=`<button class="alert-card ${bajos?'warn':''}" type="button" data-alert-filter="bajo" aria-label="Ver ${bajos} productos para reponer"><b>${bajos}</b><span>Productos para reponer · ver inventario</span></button><button class="alert-card ${lotesBajoMinimo?'warn':''}" type="button" data-alert-filter="bajo" aria-label="Ver productos con ${lotesBajoMinimo} lotes bajo el mínimo"><b>${lotesBajoMinimo}</b><span>Lotes en productos bajo el mínimo · revisar</span></button><button class="alert-card ${vencen?'warn':''}" type="button" data-alert-filter="vence" aria-label="Ver ${vencen} productos próximos a vencer"><b>${vencen}</b><span>Productos que vencen en ${margenAlertaVencimiento()} días · revisar</span></button><button class="alert-card ${vencidos?'danger':''}" type="button" data-alert-filter="vencido" aria-label="Ver ${vencidos} productos vencidos"><b>${vencidos}</b><span>Productos vencidos · revisar</span></button><button class="alert-card ${lotesProximos?'warn':''}" type="button" data-alert-filter="vence" aria-label="Ver lotes próximos a vencer"><b>${lotesProximos}</b><span>Lotes que vencen en ${margenAlertaVencimiento()} días · revisar</span></button><button class="alert-card ${reservas?'warn':''}" type="button" data-alert-open="drawerCaja" aria-label="Abrir caja para revisar ${reservas} reservas"><b>${reservas}</b><span>Reservas activas · revisar caja</span></button>`;
   panel.querySelectorAll('[data-alert-filter]').forEach(b=>b.onclick=()=>{ filtroRapido=b.dataset.alertFilter; document.querySelectorAll('.quick-filter').forEach(f=>f.classList.toggle('active',f.dataset.quick===filtroRapido)); cambiarVistaPrincipal('inventory'); render(); });
+  panel.querySelectorAll('[data-alert-open]').forEach(b=>b.onclick=()=>open(b.dataset.alertOpen));
 }
 function rAlmChips(){
   const c=$('chipsAlm'); if(!c) return; c.innerHTML='';
@@ -505,7 +532,8 @@ function rchips(){
   const c=$('chips'), sc=$('subChips'), cat=$('categoria'), cla=$('clasificador'); if(!c||!cat||!cla) return;
   c.innerHTML=''; if(sc) sc.innerHTML=''; cat.innerHTML='';
   const counts=data.productos.reduce((a,p)=>{a[p.seccion]=(a[p.seccion]||0)+1;return a;},{});
-  data.secciones.forEach(sec=>{ const ch=document.createElement('div'); ch.className='chip '+(data.filtro==='todos'&&data.actual===sec.nombre?'active':''); ch.textContent=`${sec.nombre} (${counts[sec.nombre]||0})`; ch.onclick=()=>{ data.actual=sec.nombre; data.filtro='todos'; data.subFiltro=null; rchips(); render(); }; c.appendChild(ch); });
+  const todas=document.createElement('button'); todas.type='button'; todas.className='chip '+(!data.actual?'active':''); todas.textContent=`Todas las secciones (${data.productos.length})`; todas.onclick=()=>{ data.actual=null; data.filtro='todos'; data.subFiltro=null; rchips(); render(); }; c.appendChild(todas);
+  data.secciones.forEach(sec=>{ const ch=document.createElement('button'); ch.type='button'; ch.className='chip '+(data.filtro==='todos'&&data.actual===sec.nombre?'active':''); ch.textContent=`${sec.nombre} (${counts[sec.nombre]||0})`; ch.onclick=()=>{ data.actual=sec.nombre; data.filtro='todos'; data.subFiltro=null; rchips(); render(); }; c.appendChild(ch); });
   const add=document.createElement('div'); add.className='chip'; add.style.borderStyle='dashed'; add.textContent='+ Sec'; add.onclick=()=>open('drawerSeccion'); c.appendChild(add);
   data.secciones.forEach(s=>{ const o=document.createElement('option'); o.value=s.nombre; o.textContent=s.nombre; if(data.actual===s.nombre) o.selected=true; cat.appendChild(o); });
   const todos=[...new Set([...data.clasificadores,...data.productos.map(p=>p.clasificador)].filter(s=>typeof s==='string'&&s&&s!=='Sin clasificar'))];
@@ -563,6 +591,7 @@ function render(){
     const {p,prox,dias,disp,reservado,costo}=v;
     const d=document.createElement('article');
     d.className='item'+(dias!==null&&dias<0?' item-vencido':'')+(disp<=p.stockMin?' item-stock-alert':'')+(dias!==null&&dias>=0&&dias<=margenAlertaVencimiento()?' item-expiry-alert':'')+(reservado>0?' item-reserved-alert':'')+(p.id===lastId?' new-highlight':'');
+    d.dataset.productId=String(p.id);
     const stockLabel=disp<=0?'Sin disponibilidad':disp<=p.stockMin?'Stock bajo':'Disponible';
     const stockClass=disp<=0?'empty':disp<=p.stockMin?'low':'ok';
     const almacen=data.almacenes.find(a=>a.id===p.almacenId);
